@@ -9,7 +9,7 @@ import base64
 
 from flask import Response, request, render_template, redirect, \
                   url_for, send_from_directory, stream_with_context, \
-                  make_response
+                  make_response, jsonify
 from werkzeug.exceptions import NotFound
 
 from .appconfig import Flask
@@ -198,6 +198,19 @@ def browse(path):
                 sort_fnc=sort_fnc,
                 sort_reverse=sort_reverse
                 )
+    except OutsideDirectoryBase:
+        pass
+    return NotFound()
+
+@app.route("/json_browse", defaults={"path": ""})
+@app.route('/json_browse/<path:path>')
+def json_browse(path):
+    try:
+        directory = Node.from_urlpath(path)
+        if directory.is_directory and not directory.is_excluded:
+            raw_data = list({"name": x.name, "type": x.type}
+                            for x in directory.listdir())
+            return jsonify(raw_data)
     except OutsideDirectoryBase:
         pass
     return NotFound()
